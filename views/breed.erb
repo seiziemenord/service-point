@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Question 4</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+    <h2>What is <%= pet_name %>'s breed?</h2>
+    <select name="breed" id="breed">
+    <% breeds.each do |breed| %>
+        <option value="<%= breed %>"><%= breed %></option>
+    <% end %>
+    </select>
+    <div id="breed_tip"></div>
+    <div>
+      <input type="checkbox" id="unknown-breed" name="unknown-breed" value="Unknown breed">
+      <label for="unknown-breed">I don't know the breed</label>
+    </div>
+    <button id="submit-breed" type="submit" value="Continue">Continue</button>
+  
+  <script>
+    // Event listener for when the breed select changes
+    $("#breed").change(function() {
+        var selectedBreed = $(this).val();
+        if ($("#unknown-breed").is(":checked")) {
+            selectedBreed = "Unknown breed";
+        }
+        $.get("/api/breed_tip", { breed: selectedBreed }, function(data) {
+            $("#breed_tip").html(data.tip);
+        });
+    });
+    // Event listener for when the continue button is clicked
+    $("#submit-breed").click(function(event) {
+        event.preventDefault();
+        var selectedBreed = $("#breed").val();
+        if ($("#unknown-breed").is(":checked")) {
+            // redirect to age-unknown-breed
+            window.location.href = '/age-unknown-breed';
+        } else {
+            // redirect to age
+            window.location.href = '/age';
+        }
+    });
+</script>
+
+
+
+</body>
+</html>

@@ -1,0 +1,14 @@
+form {
+    width: 80%;
+    margin: 0 auto;
+}
+
+label {
+    font-size: 1.2em;
+    margin-right: 1em;
+}
+
+input[type="submit"] {
+    margin-top: 1em;
+    float: right;
+}

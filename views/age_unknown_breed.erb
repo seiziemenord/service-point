@@ -1,0 +1,25 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Age</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>Let's talk about <%= pet_name %>'s age?</h2>
+<label>Is <%= pet_name %> a puppy or an adult?</label>
+<select name="age_group" id="age_group">
+
+  <option value="puppy">Puppy</option>
+  <option value="adult">Adult</option>
+</select>
+<div>
+<label>Enter the number of years:</label>
+<input type="number" name="age_years" id="age_years">
+<label>Enter the number of months:</label>
+<input type="number" name="age_months" id="age_months">
+
+</div>
+<button id="submit-age" type="submit" value="Continue">Continue</button>
+
+</body>
+</html>
