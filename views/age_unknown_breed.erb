@@ -3,11 +3,13 @@
 <head>
   <title>Balto Consultation - Age</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
 </head>
 <body>
   <h2>Let's talk about <%= pet_name %>'s age?</h2>
 <label>Is <%= pet_name %> a puppy or an adult?</label>
-<select name="age_group" id="age_group">
+<select name="lifestage" id="lifestage">
 
   <option value="puppy">Puppy</option>
   <option value="adult">Adult</option>
@@ -20,6 +22,31 @@
 
 </div>
 <button id="submit-age" type="submit" value="Continue">Continue</button>
+
+<script>
+    $(document).ready(function() {
+    // Event listener for when the continue button is clicked
+    $("#submit-age").click(function(event) {
+        event.preventDefault();
+        // Get the form data
+        var lifestage = $("#lifestage").val();
+        var age_years = $("#age_years").val();
+        var age_months = $("#age_months").val();
+        var data = {lifestage: lifestage, age_years: age_years, age_months: age_months};
+        // Send a POST request to the server with the form data
+        $.ajax({
+            type: "POST",
+            url: "/age_unknown_breed",
+            data: data,
+            success: function(response) {
+                // Redirect to the next page on success
+                window.location.href = '/dummy';
+            }
+        });
+    });
+});
+</script>
+
 
 </body>
 </html>

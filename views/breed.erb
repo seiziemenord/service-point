@@ -31,17 +31,27 @@
         });
     });
     // Event listener for when the continue button is clicked
-    $("#submit-breed").click(function(event) {
+        $("#submit-breed").click(function(event) {
         event.preventDefault();
         var selectedBreed = $("#breed").val();
         if ($("#unknown-breed").is(":checked")) {
-            // redirect to age-unknown-breed
-            window.location.href = '/age-unknown-breed';
+            var breed = "Unknown breed";
+            // Send a POST request to the server with the form data
+            $.ajax({
+                type: "POST",
+                url: "/breed",
+                data: {breed: breed},
+                success: function(response) {
+                    // Redirect to the next page on success
+                    window.location.href = '/age_unknown_breed';
+                }
+            });
         } else {
             // redirect to age
             window.location.href = '/age';
         }
     });
+
 </script>
 
 
