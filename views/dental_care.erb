@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Dental Care</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h2>How often do you brush <%= pet_name %>'s teeth?</h2>
+  <form>
+    <input type="radio" name="dental-brushing" value="Less than once a month"> Less than once a month<br>
+    <input type="radio" name="dental-brushing" value="Once a month"> Once a month<br>
+    <input type="radio" name="dental-brushing" value="Every week"> Every week<br>
+  </form>
+  <h2>Does <%= pet_name %> have access to chewing treats or toys?</h2>
+  <form>
+    <input type="radio" name="dental-chews" value="No"> No<br>
+    <input type="radio" name="dental-chews" value="Yes"> Yes<br>
+  </form>
+  <button type="submit" id="submit-dental-care">Submit</button>
+
+
+  <script>
+    $(document).ready(function(){
+      // Event listener for when the continue button is clicked
+      $("#submit-dental-care").click(function(event) {
+        // Prevent the form from submitting
+        event.preventDefault();
+
+        // Get the selected options
+        var dental_brushing = $("input[name='dental-brushing']:checked").val();
+        var dental_chews = $("input[name='dental-chews']:checked").val();
+
+        // Save the selected options to session storage
+        sessionStorage.setItem("dental_brushing", dental_brushing);
+        sessionStorage.setItem("dental_chews", dental_chews);
+
+        // Send a post request to the server with the selected options
+        $.post("/dental_care", { dental_brushing: dental_brushing, dental_chews: dental_chews }, function(data) {
+          // Redirect to the next page
+          window.location.href = '/issues';
+        });
+      });
+    });
+  </script>
+</body>
+</html>

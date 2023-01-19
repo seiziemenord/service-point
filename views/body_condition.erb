@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Balto Consultation - Body Condition</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  </head>
+  <body>
+    <h2>What is <%= pet_name %>'s body condition?</h2>
+    <div>
+        <input type="radio" id="body-condition-skinny" name="body-condition" value="skinny">
+        <label for="body-condition-skinny">Skinny</label>
+        <br>
+        <input type="radio" id="body-condition-perfect" name="body-condition" value="perfect">
+        <label for="body-condition-perfect">Perfect</label>
+        <br>
+        <input type="radio" id="body-condition-fat" name="body-condition" value="fat">
+        <label for="body-condition-fat">Fat</label>
+    </div>
+    <div id="body-condition-tip-skinny" style="display:none;">Dogs are skinny when you can see their ribs...</div>
+    <div id="body-condition-tip-perfect" style="display:none;">Dogs are perfect when...</div>
+    <div id="body-condition-tip-fat" style="display:none;">Dogs are fat when...</div>
+    <button id="submit-body-condition" type="submit">Continue</button>
+
+    <script>
+    $(document).ready(function(){
+        // Event listener for when a radio button is clicked
+        $("input[name='body-condition']").click(function() {
+            var selectedBodyCondition = $(this).val();
+            if (selectedBodyCondition == "skinny") {
+                $("#body-condition-tip-skinny").show();
+                $("#body-condition-tip-perfect").hide();
+                $("#body-condition-tip-fat").hide();
+            } else if (selectedBodyCondition == "perfect") {
+                $("#body-condition-tip-skinny").hide();
+                $("#body-condition-tip-perfect").show();
+                $("#body-condition-tip-fat").hide();
+            } else if (selectedBodyCondition == "fat") {
+                $("#body-condition-tip-skinny").hide();
+                $("#body-condition-tip-perfect").hide();
+                $("#body-condition-tip-fat").show();
+            }
+        });
+        // Event listener for when the continue button is clicked
+        $("#submit-body-condition").click(function(event) {
+            event.preventDefault();
+            var bodyCondition = $("input[name='body-condition']:checked").val();
+            // Send a POST request to the server with the form data
+            $.ajax({
+                type: "POST",
+                url: "/body_condition",
+                data: { body_condition: bodyCondition },
+                success: function(response) {
+                    // Redirect to the next page on success
+                    window.location.href = '/weight_current';
+                }
+            });
+        });
+    });
+</script>
+
+
+  </body>
+</html>

@@ -8,6 +8,7 @@
 <body>
     <h2>What is <%= pet_name %>'s breed?</h2>
     <select name="breed" id="breed">
+        <option value="" selected>Please select</option>
     <% breeds.each do |breed| %>
         <option value="<%= breed %>"><%= breed %></option>
     <% end %>
@@ -20,18 +21,33 @@
     <button id="submit-breed" type="submit" value="Continue">Continue</button>
   
   <script>
+    //Event listener for when the unknown breed checkbox is clicked
+    $("#unknown-breed").change(function() {
+        if(this.checked) {
+            $("#breed").val("");
+            $("#breed_tip").hide();
+        }
+        });
+    
     // Event listener for when the breed select changes
     $("#breed").change(function() {
         var selectedBreed = $(this).val();
+        if (selectedBreed != "") {
+            $("#unknown-breed").prop("checked", false);
+        }
         if ($("#unknown-breed").is(":checked")) {
             selectedBreed = "Unknown breed";
+            $("#breed_tip").hide();
+        } else {
+            $("#breed_tip").show();
+            $.get("/api/breed_tip", { breed: selectedBreed }, function(data) {
+                $("#breed_tip").html(data.tip);
+            });
         }
-        $.get("/api/breed_tip", { breed: selectedBreed }, function(data) {
-            $("#breed_tip").html(data.tip);
-        });
     });
+
     // Event listener for when the continue button is clicked
-        $("#submit-breed").click(function(event) {
+            $("#submit-breed").click(function(event) {
         event.preventDefault();
         var selectedBreed = $("#breed").val();
         if ($("#unknown-breed").is(":checked")) {
@@ -47,14 +63,19 @@
                 }
             });
         } else {
-            // redirect to age
-            window.location.href = '/age';
+            // Send a POST request to the server with the form data
+            $.ajax({
+                type: "POST",
+                url: "/breed",
+                data: {breed: selectedBreed},
+                success: function(response) {
+                    // Redirect to the next page on success
+                    window.location.href = '/age';
+                }
+            });
         }
     });
 
 </script>
-
-
-
 </body>
 </html>

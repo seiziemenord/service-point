@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Email</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h2>Please enter your email address to save your answers and access <%= pet_name %>'s diagnosis.</h2>
+  <form>
+    <input type="email" id="email-address" name="email" placeholder="Enter your email address">
+    <span id="email-error"></span>
+  </form>
+  <button type="submit" id="submit-email">Submit</button>
+  <script>
+    $(document).ready(function(){
+      // Event listener for when the continue button is clicked
+      $("#submit-email").click(function(event) {
+        // Prevent the form from submitting
+        event.preventDefault();
+
+        // Get the email address
+        var email = $("#email-address").val();
+
+        // Validate the email address
+        var emailRegex = /^(([^<>()\[\]\\.,;:\s@"]+(\.[^<>()\[\]\\.,;:\s@"]+)*)|(".+"))@((\[[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}\.[0-9]{1,3}])|(([a-zA-Z\-0-9]+\.)+[a-zA-Z]{2,}))$/;
+        if (!emailRegex.test(email)) {
+          $("#email-error").text("Please enter a valid email address");
+          return;
+        }
+
+        // Send the email address to the server side
+        $.ajax({
+          type: "POST",
+          url: "/email",
+          data: { email: email },
+          success: function(response) {
+        // Redirect to the next page
+        window.location.href = '/dummy';
+        }
+      });
+    });
+
+  });
+  </script>
+</body>
+</html>

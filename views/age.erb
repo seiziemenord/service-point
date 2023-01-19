@@ -3,6 +3,7 @@
 <head>
   <title>Balto Consultation - Age</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
 </head>
 <body>
   <h2>How old is <%= pet_name %>?</h2>
@@ -15,6 +16,29 @@
 
 </div>
 <button id="submit-age" type="submit" value="Continue">Continue</button>
+
+<script>
+    $(document).ready(function() {
+    // Event listener for when the continue button is clicked
+    $("#submit-age").click(function(event) {
+        event.preventDefault();
+        // Get the form data
+        var age_years = $("#age_years").val();
+        var age_months = $("#age_months").val();
+        var data = {age_years: age_years, age_months: age_months};
+        // Send a POST request to the server with the form data
+        $.ajax({
+            type: "POST",
+            url: "/age",
+            data: data,
+            success: function(response) {
+                // Redirect to the next page on success
+                window.location.href = '/neuter';
+            }
+        });
+    });
+});
+</script>
 
 </body>
 </html>

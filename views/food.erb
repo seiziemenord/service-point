@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Food</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h2>What kind of food does <%= pet_name %> currently eat?</h2>
+    <select id="food_type" name="food_type" multiple>
+      <option value="Dry food">Dry food</option>
+      <option value="Wet food">Wet food</option>
+      <option value="Raw">Raw</option>
+      <option value="Home-cooked">Home-cooked</option>
+    </select>
+  <div id="food-brand" style="display:none;">
+    <select name="food-brand" id="food-brand">
+    <option value="" selected>Please select</option>
+    <% food_brands.each do |brand| %>
+        <option value="<%= brand %>"><%= brand %></option>
+    <% end %>
+    </select>
+    <div id="brand_tip"></div>
+    <div>
+    <input type="checkbox" id="unknown-brand" name="unknown-brand" value="Unknown brand">
+    <label for="unknown-brand">I don't know the food brand</label>
+</div>
+  </div>
+  <button type="submit" id="submit-food">Submit</button>
+
+<script>
+  $(document).ready(function(){
+    // Show the food brand question if " “Dry food” OR “Wet food” selected
+    $("#food_type").change(function(){
+      if ($(this).val().includes("Dry food") || $(this).val().includes("Wet food")) {
+        $("#food-brand").show();
+      } else {
+        $("#food-brand").hide();
+      }
+    });
+
+    // Show the brand tip
+    $("#food-brand").change(function(){
+      var selectedBrand = $(this).val();
+      $.get("/api/brand_tip", { brand: selectedBrand }, function(data) {
+          $("#brand_tip").html(data.brand_tip);
+      });
+    });
+
+    // Event listener for when the continue button is clicked
+    $("#submit-food").click(function(event) {
+      event.preventDefault();
+
+      var food_type = $("#food_type").val();
+      var food_brand = $("#brand").val();
+      var unknown_brand = $("#unknown-brand").is(":checked");
+
+      if (unknown_brand) {
+        food_brand = "Unknown brand";
+      }
+
+      // Send POST request to server with food_brand as data payload
+      $.ajax({
+        type: "POST",
+        url: "/food",
+        data: { food_type: food_type, food_brand: food_brand },
+        success: function(response) {
+          // Redirect to the next page
+          window.location.href = '/ingredient_exclusion';
+        }
+      });
+    });
+
+  });
+</script>
+
+
+</body>
+</html>

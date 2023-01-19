@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Weight specific</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <% if lifestage == "puppy" && breed != "Unknown breed" %>
+<h2>What is <%= pet_name %>'s estimated weight at adult age?</h2>
+<div>
+<input id="weight_adult" type="number" min="0" name="weight_adult">
+<label for="weight_adult">kg</label>
+</div>
+<div>
+<input type="checkbox" id="weight_adult_unknown" name="weight_adult_unknown">
+<label for="weight_adult_unknown">I don't know the estimated weight</label>
+</div>
+<% elsif lifestage == "puppy" && breed == "Unknown breed" %>
+<h2>What is <%= pet_name %>'s estimated weight at adult age?</h2>
+<div>
+<input id="weight_adult" type="number" min="0" name="weight_adult" required>
+<label for="weight_adult">kg</label>
+</div>
+<% elsif nec != 5 %>
+<h2>What is <%= pet_name %>'s ideal weight?</h2>
+<div>
+<input id="weight_target" type="number" min="0" name="weight_target">
+<label for="weight_target">kg</label>
+</div>
+<div>
+<input type="checkbox" id="weight_target_unknown" name="weight_target_unknown">
+<label for="weight_target_unknown">I don't know the ideal weight</label>
+</div>
+<% end %>
+<button id="submit-weight" type="submit">Continue</button>
+
+  <script>
+  $(document).ready(function(){
+    // Add event listener to the weight_adult_unknown checkbox
+    $("#weight_adult_unknown").click(function(){
+      if ($(this).is(":checked")) {
+        $("#weight_adult").val("");
+      }
+    });
+
+    $("#submit-weight").click(function() {
+    if ($("#weight_adult").val() == "" && $("#weight_adult_unknown").is(":checked")) {
+        var weight_adult = "Unknown";
+    } else {
+        var weight_adult = $("#weight_adult").val();
+    }
+
+    var weight_target = $("#weight_target").val();
+    var weight_target_unknown = $("#weight_target_unknown").is(":checked");
+    if (weight_target_unknown) {
+        weight_target = "Unknown";
+    }
+    // Send a POST request to the server with the form data
+    $.ajax({
+        type: "POST",
+        url: "/weight_specific",
+        data: {weight_adult: weight_adult, weight_target: weight_target},
+    });
+    window.location.href = '/activity_level';
+});
+
+  });
+</script>
+
+
+
+
+  
+  </body>
+</html>

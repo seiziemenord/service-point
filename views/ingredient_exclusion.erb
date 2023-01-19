@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Ingredient Exclusion</title>
+  <link rel="stylesheet" href="style.css">
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+</head>
+<body>
+  <h2>Is <%= pet_name %> allergic or does he not like any of the following protein sources?</h2>
+  <form>
+    <input type="checkbox" name="ingredient-exclusion" value="Chicken"> Chicken<br>
+    <input type="checkbox" name="ingredient-exclusion" value="Turkey"> Turkey<br>
+    <input type="checkbox" name="ingredient-exclusion" value="Lamb"> Lamb<br>
+    <input type="checkbox" name="ingredient-exclusion" value="Fish"> Fish<br>
+    <input type="checkbox" name="ingredient-exclusion" value="Duck"> Duck<br>
+    <input type="checkbox" name="ingredient-exclusion" value="Grains"> Grains<br>
+    <input type="checkbox" id="eats-everything" name="ingredient-exclusion" value="My dog eats everything"> My dog eats everything
+  </form>
+  <button type="submit" id="submit-ingredient-exclusion">Submit</button>
+  <script>
+    $(document).ready(function(){
+      // Uncheck the multi-select options when "My dog eats everything" is selected
+      $("#eats-everything").change(function(){
+        if ($(this).is(":checked")) {
+          $("input[name='ingredient-exclusion']").not(this).prop("checked", false);
+        }
+      });
+
+      // Uncheck "My dog eats everything" when any of the multi-select options are selected
+      $("input[name='ingredient-exclusion']").not("#eats-everything").change(function(){
+        if ($(this).is(":checked")) {
+          $("#eats-everything").prop("checked", false);
+        }
+      });
+
+      // Event listener for when the continue button is clicked
+      $("#submit-ingredient-exclusion").click(function(event) {
+
+        // Prevent the form from submitting
+        event.preventDefault();
+
+     // Get the selected options
+    var ingredient_exclusion = $("input[name='ingredient-exclusion']:checked").map(function(){
+      return $(this).val();
+    }).get();
+    
+    // Send a POST request to the server with the selected options
+    $.ajax({
+        type: "POST",
+        url: '/ingredient_exclusion',
+        data: {ingredient_exclusion: ingredient_exclusion},
+        success: function() {
+            // Redirect to the next page
+            window.location.href = '/dental_care';
+        }
+    });
+  });
+});
+  </script>
+</body>
+</html>
