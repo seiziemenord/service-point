@@ -4,13 +4,14 @@ require 'sqlite3'
 
 class BaltoConsultation < Sinatra::Base
   enable :sessions
-  attr_accessor :pet, :pet_name, :sex, :breed, :age_years, :age_months, :age_total_months, :lifestage, :neuter, :k3, :body_condition, :nec, :weight_current, :weight_adult, :weight_target, :activity_level, :k2, :recovery_routine, :food_type, :food_brand, :ingredient_exclusion, :dental_brushing, :dental_chews, :wellness_issues, :email, :age_adult_months, :age_senior_years, :mer
+  attr_accessor :pet, :pet_name, :sex, :breed, :k1, :age_years, :age_months, :age_total_months, :lifestage, :neuter, :k3, :body_condition, :nec, :weight_current, :weight_adult, :weight_target, :activity_level, :k2, :recovery_routine, :food_type, :food_brand, :ingredient_exclusion, :dental_brushing, :dental_chews, :wellness_issues, :email, :age_adult_months, :age_senior_years, :mer, :diet_mix
 
   #Initialize variables to store user's answers
     @pet = ""
     @pet_name = ""
     @sex = ""
     @breed = ""
+    @k1 = ""
     @age_years = 0
     @age_months = 0
     @age_total_months = 0
@@ -33,6 +34,7 @@ class BaltoConsultation < Sinatra::Base
     @wellness_issues = ""
     @email = ""
     @mer = 0
+    @diet_mix = []
 
   get '/' do
     @pet = session[:pet]
@@ -82,9 +84,11 @@ class BaltoConsultation < Sinatra::Base
       db = SQLite3::Database.new 'balto.db'
       age_adult_months = db.execute("SELECT age_adult_months FROM dog_breeds WHERE name=?", [session[:breed]]).first
       age_senior_years = db.execute("SELECT age_senior_years FROM dog_breeds WHERE name=?", [session[:breed]]).first
+      k1 = db.execute("SELECT k1 FROM dog_breeds WHERE name=?", [session[:breed]]).first
       db.close
       session[:age_adult_months] = age_adult_months[0].to_i
       session[:age_senior_years] = age_senior_years[0].to_i
+      session[:k1] = k1[0].to_f
       redirect '/age'
     end
   end 
@@ -171,7 +175,7 @@ class BaltoConsultation < Sinatra::Base
   end
 
   get '/weight_current' do
-    erb :weight_current, locals: { pet_name: session[:pet_name], nec: session[:nec] }
+    erb :weight_current, locals: { pet_name: session[:pet_name], nec: session[:nec], lifestage: session[:lifestage] }
   end
 
   post '/weight_current' do
@@ -299,16 +303,71 @@ post '/dental_care' do
     
     post '/email' do
       session[:email] = params[:email]
-      redirect '/dummy'
+
+    # Calcs - Pet caloric needs 
+    if session[:pet] == "dog"
+      if session[:lifestage] != "puppy" 
+        session[:mer] = ((session[:weight_target].to_f ** 0.75) * 130 * session[:k2].to_f * session[:k3].to_f).round
+      else
+        session[:mer] = ((254 - (135 * session[:weight_current].to_f / session[:weight_adult].to_f)) * (session[:weight_current].to_f ** 0.75)).round
+      end
     end
+
+    # Determine diet mix
+    def determine_diet_mix(food_type)
+      if food_type.all? { |type| type == "Dry food" }
+        diet_mix = {"dry" => "100%", "wet" => "0%"}
+      else
+        diet_mix = {"dry" => "75%", "wet" => "25%"}
+      end
+      return diet_mix
+    end
+    session[:diet_mix] = determine_diet_mix(session[:food_type])
+    
+    
+    # Product recommendation function
+    def determine_product_recommendations(diet_mix, lifestage, weight_current, nec, ingredient_exclusion)
+      product_recommendations = {}
+      db = SQLite3::Database.open "balto.db"
   
-  # Calcs - Pet caloric needs 
-  if session[:pet] == "dog"
-    if session[:lifestage] != "puppy" 
-      session[:mer] = ((session[:weight_target].to_f ** 0.75) * 130 * session[:k2].to_f * session[:k3].to_f).round
+  # Determine dry food product recommendations
+  if diet_mix.include?("dry")
+    dry_recommendations = []
+    if lifestage == "puppy"
+      if weight_current < 5
+        dry_recommendations << "SGF"
+      else
+        dry_recommendations += ["PES", "AES", "SES"]
+      end
+    elsif lifestage == "senior" || nec == 7
+      dry_recommendations += ["DES", "PES", "AES", "SES"]
     else
-      session[:mer] = ((254 - (135 * session[:weight_current].to_f / session[:weight_adult].to_f)) * (session[:weight_current].to_f ** 0.75)).round
+      dry_recommendations += ["PES", "AES", "SES"]
     end
+    # Exclude products that contain ingredients in ingredient_exclusion
+    dry_recommendations.each do |product_id|
+      protein_sources = db.execute("SELECT protein_sources FROM products WHERE product_ID = ?", product_id)
+      if (protein_sources & ingredient_exclusion).empty?
+        product_recommendations["dry"] ||= []
+        product_recommendations["dry"] << product_id
+      end
+    end
+  end
+
+  # Determine wet food product recommendations
+  if diet_mix.include?("wet")
+    # ... code to determine wet food product recommendations goes here ...
+    # ... and don't forget to exclude products that contain ingredients in ingredient_exclusion ...
+  end
+  return product_recommendations
+end
+
+session[:product_recommendations] = determine_product_recommendations(session[:diet_mix], session[:lifestage], session[:weight_current], session[:nec], session[:ingredient_exclusion])
+
+    end
+end
+    
+    redirect '/dummy'
   end
 
   get '/dummy' do
@@ -317,6 +376,7 @@ post '/dental_care' do
       pet_name: session[:pet_name],
       sex: session[:sex],
       breed: session[:breed],
+      k1: session[:k1],
       age_years: session[:age_years],
       age_months: session[:age_months],
       age_total_months: session[:age_total_months],
@@ -338,8 +398,10 @@ post '/dental_care' do
       dental_chews: session[:dental_chews],
       wellness_issues: session[:wellness_issues],
       email: session[:email],
-      mer: session[:mer] }
-
+      mer: session[:mer],
+      diet_mix: session[:diet_mix] 
+      product_recommendations: session[:product_recommendations] }
+    
   end
 
 BaltoConsultation.run!
