@@ -304,71 +304,72 @@ post '/dental_care' do
     post '/email' do
       session[:email] = params[:email]
 
-    # Calcs - Pet caloric needs 
-    if session[:pet] == "dog"
-      if session[:lifestage] != "puppy" 
-        session[:mer] = ((session[:weight_target].to_f ** 0.75) * 130 * session[:k2].to_f * session[:k3].to_f).round
-      else
-        session[:mer] = ((254 - (135 * session[:weight_current].to_f / session[:weight_adult].to_f)) * (session[:weight_current].to_f ** 0.75)).round
+      # Calcs - Pet caloric needs 
+      if session[:pet] == "dog"
+        if session[:lifestage] != "puppy" 
+          session[:mer] = ((session[:weight_target].to_f ** 0.75) * 130 * session[:k2].to_f * session[:k3].to_f).round
+        else
+          session[:mer] = ((254 - (135 * session[:weight_current].to_f / session[:weight_adult].to_f)) * (session[:weight_current].to_f ** 0.75)).round
+        end
       end
-    end
 
-    # Determine diet mix
-    def determine_diet_mix(food_type)
-      if food_type.all? { |type| type == "Dry food" }
-        diet_mix = {"dry" => "100%", "wet" => "0%"}
-      else
-        diet_mix = {"dry" => "75%", "wet" => "25%"}
+      # Determine diet mix
+      def determine_diet_mix(food_type)
+        if food_type.all? { |type| type == "Dry food" }
+          diet_mix = {"dry" => "100%", "wet" => "0%"}
+        else
+          diet_mix = {"dry" => "75%", "wet" => "25%"}
+        end
+        return diet_mix
       end
-      return diet_mix
-    end
-    session[:diet_mix] = determine_diet_mix(session[:food_type])
+      session[:diet_mix] = determine_diet_mix(session[:food_type])
     
     
-    # Product recommendation function
-    def determine_product_recommendations(diet_mix, lifestage, weight_current, nec, ingredient_exclusion)
-      product_recommendations = {}
-      db = SQLite3::Database.open "balto.db"
-  
-  # Determine dry food product recommendations
-  if diet_mix.include?("dry")
-    dry_recommendations = []
-    if lifestage == "puppy"
-      if weight_current < 5
-        dry_recommendations << "SGF"
-      else
-        dry_recommendations += ["PES", "AES", "SES"]
+      # Product recommendation function
+      def determine_product_recommendations(diet_mix, lifestage, weight_current, nec, ingredient_exclusion)
+        product_recommendations = {}
+        db = SQLite3::Database.open "balto.db"
+      
+        # Convert ingredient_exclusion to an array of lowercase strings
+        ingredient_exclusion = ingredient_exclusion.map{|ingredient| ingredient.downcase}.join(",").split(",")
+      
+        # Determine dry food product recommendations
+        if diet_mix.include?("dry")
+          dry_recommendations = []
+          if lifestage == "puppy"
+            if weight_current < 5
+              dry_recommendations << "SGF"
+            else
+              dry_recommendations += ["PES", "AES", "SES"]
+            end
+          elsif lifestage == "senior" || nec == 7
+            dry_recommendations += ["DES", "PES", "AES", "SES"]
+          else
+            dry_recommendations += ["PES", "AES", "SES"]
+          end
+        end
+          # Exclude products that contain ingredients in ingredient_exclusion
+          ingredient_exclusion = ingredient_exclusion.map{|ingredient| ingredient.downcase}.join(",").split(",")
+          dry_recommendations.each do |product_id|
+            protein_sources = db.execute("SELECT protein_sources FROM products WHERE product_ID = ? LIMIT 1", product_id)[0][0].to_s.split(",").map(&:downcase)
+            if (protein_sources & ingredient_exclusion).empty?
+              product_recommendations["dry"] ||= []
+              product_recommendations["dry"] << product_id
+            end
+          end
+      
+      
+        # Determine wet food product recommendations
+        # ... code to determine wet food product recommendations goes here ...
+        # ... and don't forget to exclude products that contain ingredients in ingredient_exclusion ...
+      
+        return product_recommendations
       end
-    elsif lifestage == "senior" || nec == 7
-      dry_recommendations += ["DES", "PES", "AES", "SES"]
-    else
-      dry_recommendations += ["PES", "AES", "SES"]
+      
+      session[:product_recommendations] = determine_product_recommendations(session[:diet_mix], session[:lifestage], session[:weight_current], session[:nec], session[:ingredient_exclusion])
+      
+      redirect '/dummy'
     end
-    # Exclude products that contain ingredients in ingredient_exclusion
-    dry_recommendations.each do |product_id|
-      protein_sources = db.execute("SELECT protein_sources FROM products WHERE product_ID = ?", product_id)
-      if (protein_sources & ingredient_exclusion).empty?
-        product_recommendations["dry"] ||= []
-        product_recommendations["dry"] << product_id
-      end
-    end
-  end
-
-  # Determine wet food product recommendations
-  if diet_mix.include?("wet")
-    # ... code to determine wet food product recommendations goes here ...
-    # ... and don't forget to exclude products that contain ingredients in ingredient_exclusion ...
-  end
-  return product_recommendations
-end
-
-session[:product_recommendations] = determine_product_recommendations(session[:diet_mix], session[:lifestage], session[:weight_current], session[:nec], session[:ingredient_exclusion])
-
-    end
-end
-    
-    redirect '/dummy'
-  end
 
   get '/dummy' do
     erb :dummy, locals: {
@@ -399,7 +400,8 @@ end
       wellness_issues: session[:wellness_issues],
       email: session[:email],
       mer: session[:mer],
-      diet_mix: session[:diet_mix] 
+      diet_mix: session[:diet_mix],
+      protein_sources: session[:protein_sources],
       product_recommendations: session[:product_recommendations] }
     
   end
