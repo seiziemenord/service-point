@@ -357,16 +357,42 @@ post '/dental_care' do
               product_recommendations["dry"] << product_id
             end
           end
-      
-      
+  
         # Determine wet food product recommendations
-        # ... code to determine wet food product recommendations goes here ...
-        # ... and don't forget to exclude products that contain ingredients in ingredient_exclusion ...
-      
+        if diet_mix.include?("wet")
+          wet_recommendations = []
+          wet_recommendations << "DWR"
+        end
+        # Exclude products that contain ingredients in ingredient_exclusion
+          ingredient_exclusion = ingredient_exclusion.map{|ingredient| ingredient.downcase}.join(",").split(",")
+          wet_recommendations.each do |product_id|
+            protein_sources = db.execute("SELECT protein_sources FROM products WHERE product_ID = ? LIMIT 1", product_id)[0][0].to_s.split(",").map(&:downcase)
+            if (protein_sources & ingredient_exclusion).empty?
+              product_recommendations["wet"] ||= []
+              product_recommendations["wet"] << product_id
+            end
+          end
         return product_recommendations
       end
       
       session[:product_recommendations] = determine_product_recommendations(session[:diet_mix], session[:lifestage], session[:weight_current], session[:nec], session[:ingredient_exclusion])
+      
+
+      # Split MER depending on diet mix 
+      session[:daily_feeding_calories] = {}
+      session[:diet_mix].each do |key, value|
+        session[:daily_feeding_calories][key] = (session[:mer] * (value.to_f / 100)).to_i
+      end
+
+      # Calculate feeding amount for selected products 
+      session[:daily_feeding_grams] = {}
+        # Check product ID caloric density on the DB
+      db = SQLite3::Database.open "balto.db"
+      session[:product_recommendations].each do |key, value|
+        product_id = value.first
+        caloric_density = db.execute("SELECT caloric_density FROM products WHERE product_ID = ? LIMIT 1", product_id)[0][0]
+        session[:daily_feeding_grams][key] = (session[:daily_feeding_calories][key] / caloric_density).to_i
+      end
       
       redirect '/dummy'
     end
@@ -402,7 +428,9 @@ post '/dental_care' do
       mer: session[:mer],
       diet_mix: session[:diet_mix],
       protein_sources: session[:protein_sources],
-      product_recommendations: session[:product_recommendations] }
+      product_recommendations: session[:product_recommendations],
+      daily_feeding_calories: session[:daily_feeding_calories],
+      daily_feeding_grams: session[:daily_feeding_grams] }
     
   end
 
