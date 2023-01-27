@@ -359,10 +359,9 @@ post '/dental_care' do
           end
   
         # Determine wet food product recommendations
-        if diet_mix.include?("wet")
+        if diet_mix.include?("wet") && diet_mix["wet"] != "0%"
           wet_recommendations = []
           wet_recommendations << "DWR"
-        end
         # Exclude products that contain ingredients in ingredient_exclusion
           ingredient_exclusion = ingredient_exclusion.map{|ingredient| ingredient.downcase}.join(",").split(",")
           wet_recommendations.each do |product_id|
@@ -372,6 +371,7 @@ post '/dental_care' do
               product_recommendations["wet"] << product_id
             end
           end
+        end
         return product_recommendations
       end
       
@@ -381,8 +381,12 @@ post '/dental_care' do
       # Split MER depending on diet mix 
       session[:daily_feeding_calories] = {}
       session[:diet_mix].each do |key, value|
+        if key == "wet" && value == "0%"
+          next
+        end
         session[:daily_feeding_calories][key] = (session[:mer] * (value.to_f / 100)).to_i
       end
+
 
       # Calculate feeding amount for selected products 
       session[:daily_feeding_grams] = {}
