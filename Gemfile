@@ -1,5 +1,5 @@
 source 'https://rubygems.org'
 gem 'sinatra'
 gem 'sinatra-contrib'
-gem 'sqlite3'
+gem 'sqlite3', '1.5.4'
 gem 'puma'

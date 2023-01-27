@@ -22,7 +22,7 @@ GEM
       rack-protection (= 3.0.5)
       sinatra (= 3.0.5)
       tilt (~> 2.0)
-    sqlite3 (1.6.0-x86_64-linux)
+    sqlite3 (1.5.4-x86_64-linux)
     tilt (2.0.11)
 
 PLATFORMS
@@ -32,7 +32,7 @@ DEPENDENCIES
   puma
   sinatra
   sinatra-contrib
-  sqlite3
+  sqlite3 (= 1.5.4)
 
 BUNDLED WITH
    2.3.7
