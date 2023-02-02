@@ -418,7 +418,7 @@ post '/dental_care' do
         end
         session[:pet_profile_tags] = pet_profile_tags
         
-        # Assign pet tips
+        # Assign pet tips - STILL WORK IN PROGRESS
         pet_tips = []
 
         # Query the pet_tips table
