@@ -11,12 +11,14 @@ class BaltoConsultation < Sinatra::Base
     @pet_name = ""
     @sex = ""
     @breed = ""
+    #@k1 is a breed adjustment factor, that we use to calculate the pet's daily caloric needs (session[:mer]). This information is stored in our dog breeds databse
     @k1 = ""
     @age_years = 0
     @age_months = 0
     @age_total_months = 0
     @lifestage = ""
     @neuter = ""
+    #@k3 is a neutered adjustment factor, that we use to calculate the pet's daily caloric needs (session[:mer]). This information is stored in our dog breeds databse
     @k3 = 0
     @body_condition = ""
     @nec = 0
@@ -24,6 +26,7 @@ class BaltoConsultation < Sinatra::Base
     @weight_adult = 0
     @weight_target = 0
     @activity_level = ""
+    #@k2 is an activity level adjustment factor, that we use to calculate the pet's daily caloric needs (session[:mer]). This information is stored in our dog breeds databse
     @k2 = 0
     @recovery_routine = ""
     @food_type = ""
@@ -118,6 +121,7 @@ class BaltoConsultation < Sinatra::Base
     erb :age, locals: { pet_name: session[:pet_name] }
   end
 
+  # We will need to set up a Cron job on Vercel that recalculates age of the pet every month (this impacts the lifestage calc)
   post '/age' do
     session[:age_years] = params[:age_years]
     session[:age_months] = params[:age_months]
@@ -375,7 +379,7 @@ post '/dental_care' do
       session[:product_recommendations] = determine_product_recommendations(session[:diet_mix], session[:lifestage], session[:weight_current], session[:nec], session[:ingredient_exclusion])
       
 
-      # Split MER depending on diet mix 
+      # Split MER depending on diet mix
       session[:daily_feeding_calories] = {}
       session[:diet_mix].each do |key, value|
         if key == "wet" && value == "0%"
@@ -454,7 +458,6 @@ post '/dental_care' do
             pet_tips << row[0] unless c1_matching_id
           end
         end
-
 
         session[:pet_tips] = pet_tips
         db.close
