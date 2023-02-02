@@ -160,26 +160,23 @@ class BaltoConsultation < Sinatra::Base
   end
 
   post '/body_condition' do
-    body_condition = params[:body_condition]
-    if body_condition == "skinny"
-      session[:body_condition] = "skinny"
+    session[:body_condition] = params[:body_condition]
+    if session[:body_condition] == "skinny"
       session[:nec] = 3
-    elsif body_condition == "perfect"
-      session[:body_condition] = "perfect"
+    elsif session[:body_condition] == "perfect"
       session[:nec] = 5
     else
-      session[:body_condition] = "fat"
       session[:nec] = 7
     end
     redirect '/weight_current'
-  end
+  end  
 
   get '/weight_current' do
     erb :weight_current, locals: { pet_name: session[:pet_name], nec: session[:nec], lifestage: session[:lifestage] }
   end
 
   post '/weight_current' do
-    session[:weight_current] = params[:weight]
+    session[:weight_current] = params[:weight].to_f
     if session[:nec] == 5
       session[:weight_target] = session[:weight_current] 
       redirect '/activity_level'  
@@ -387,7 +384,6 @@ post '/dental_care' do
         session[:daily_feeding_calories][key] = (session[:mer] * (value.to_f / 100)).to_i
       end
 
-
       # Calculate feeding amount for selected products 
       session[:daily_feeding_grams] = {}
         # Check product ID caloric density on the DB
@@ -398,10 +394,80 @@ post '/dental_care' do
         session[:daily_feeding_grams][key] = (session[:daily_feeding_calories][key] / caloric_density).to_i
       end
       
+        # Pet profile work
+        # Define the pet_profile_tags variable (array)
+        pet_profile_tags = []
+        # Add profile values to the array based on conditions
+        pet_profile_tags << session[:lifestage]
+        if session[:wellness_issues].include?("Mobility")
+          pet_profile_tags << "mobility_issues"
+        end
+        if session[:activity_level] = "lazy"
+          pet_profile_tags << "activity_low"
+        end
+        if session[:nec] == 3
+          pet_profile_tags << "underweight"
+        elsif session[:nec] == 5
+          pet_profile_tags << "ideal_weight"
+        else 
+          pet_profile_tags << "overweight"
+        end
+        session[:pet_profile_tags] = pet_profile_tags
+        
+        # Assign pet tips
+        pet_tips = []
+
+        # Query the pet_tips table
+        db = SQLite3::Database.open "balto.db"
+        rows = db.execute("SELECT * FROM pet_tips")
+
+        # Get the column names
+        column_names = db.execute("PRAGMA table_info(pet_tips)").map { |column| column[1] }
+
+        # Get the index of the C1_inclusion, C2_inclusion and C3_exclusion columns
+        c1_inclusion_index = column_names.index("C1_inclusion")
+        c2_inclusion_index = column_names.index("C2_inclusion")
+        c3_exclusion_index = column_names.index("C3_exclusion")
+        
+        # Iterate through each row of the table to identify rows that match the C1_inclusion and C2_inclusion and don't match the C3_exclusion
+        rows.each do |row|
+          if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
+            session[:pet_profile_tags].include?(row[c2_inclusion_index]) &&
+            !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
+            c1_inclusion_value = row[c1_inclusion_index]
+            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
+            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
+            pet_tips << row[0] unless c1_matching_id
+          end
+        end
+
+        # Iterate through each row of the table to identify rows that match only the C1_inclusion and don't match the C3_exclusion
+        rows.each do |row|
+          if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
+            row[c2_inclusion_index] == "null" &&
+            !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
+            c1_inclusion_value = row[c1_inclusion_index]
+            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
+            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
+            pet_tips << row[0] unless c1_matching_id
+          end
+        end
+
+
+        session[:pet_tips] = pet_tips
+        db.close
+
       redirect '/dummy'
     end
 
   get '/dummy' do
+    spider_chart_nutrition = 5
+    spider_chart_activity = 5
+    spider_chart_dental = 5
+    spider_chart_body = 5
+    spider_chart_mobility = 5
     erb :dummy, locals: {
       pet: session[:pet],
       pet_name: session[:pet_name],
@@ -434,7 +500,14 @@ post '/dental_care' do
       protein_sources: session[:protein_sources],
       product_recommendations: session[:product_recommendations],
       daily_feeding_calories: session[:daily_feeding_calories],
-      daily_feeding_grams: session[:daily_feeding_grams] }
+      daily_feeding_grams: session[:daily_feeding_grams],
+      pet_profile_tags: session[:pet_profile_tags],
+      pet_tips: session[:pet_tips],
+      spider_chart_nutrition: spider_chart_nutrition,
+      spider_chart_activity: spider_chart_activity,
+      spider_chart_dental: spider_chart_dental,
+      spider_chart_body: spider_chart_body,
+      spider_chart_mobility: spider_chart_mobility }
     
   end
 

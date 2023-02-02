@@ -3,6 +3,7 @@
 <head>
   <title>Balto Consultation - Summary</title>
   <link rel="stylesheet" href="style.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <h2>Dummy Page</h2>
@@ -39,6 +40,35 @@
   <h2>Recommended products: <%= session[:product_recommendations] %></h2>
   <h2>Feeding plan in calories: <%= session[:daily_feeding_calories] %></h2>
   <h2>Feeding plan in grams: <%= session[:daily_feeding_grams] %></h2>
+  <h2>Pet profile tags: <%= session[:pet_profile_tags] %></h2>
+  <h2>Pet tips IDs: <%= session[:pet_tips] %></h2>
+  <h2>Spider chart:</h2>
+  <div style="height: 300px">
+    <canvas id="myChart"></canvas>
+  </div>
+  <script>
+  const ctx = document.getElementById('myChart');
+  new Chart(ctx, {
+    type: 'radar',
+    data: {
+      labels: ['Nutrition', 'Activity', 'Dental', 'Body', 'Mobility'],
+      datasets: [{
+        label: 'Pet wellness profile',
+        backgroundColor: 'rgba(255, 99, 132, 0.2)',
+        borderColor: 'rgba(255, 99, 132, 1)',
+        data: [5, 5, 5, 5, 5]
+      }]
+    },
+    options: {
+      scale: {
+        ticks: {
+          beginAtZero: true
+        }
+      }
+    }
+  });
+</script>
+
 
 </body>
 </html>
