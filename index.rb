@@ -229,17 +229,15 @@ end
 
   post '/activity_level' do
     activity_level = params[:activity_level]
-    if activity_level == "lazy"
-      session[:activity_level] = "lazy"
+    if activity_level == "Lazy"
       session[:k2] = 0.8
-    elsif activity_level == "normal"
-      session[:activity_level] = "normal"
+    elsif activity_level == "Normal"
       session[:k2] = 0.9
     else
-      session[:activity_level] = "very active"
       session[:k2] = 1.1
       session[:recovery_routine] = params[:recovery_routine]
     end
+    session[:activity_level] = activity_level
     redirect '/food'
   end
 
@@ -264,7 +262,12 @@ end
     brand_tip = db.execute("SELECT comment FROM food_brands WHERE name=?", [@brand]).first
     db.close
     content_type :json
-    {brand_tip: brand_tip[0]}.to_json
+    if brand_tip
+      {brand_tip: brand_tip[0]}.to_json
+    else
+      {brand_tip: nil}.to_json
+    end    
+
 end
 
 get '/ingredient_exclusion' do
@@ -403,23 +406,36 @@ post '/dental_care' do
         pet_profile_tags = []
         # Add profile values to the array based on conditions
         pet_profile_tags << session[:lifestage]
+        pet_profile_tags << session[:neuter]
         if session[:wellness_issues].include?("Mobility")
           pet_profile_tags << "mobility_issues"
+        elsif session[:wellness_issues].include?("Digestion issues")
+          pet_profile_tags << "digestion"
         end
-        if session[:activity_level] = "lazy"
+        if session[:activity_level] == "lazy"
           pet_profile_tags << "activity_low"
+        elsif session[:activity_level] = "normal"
+          pet_profile_tags << "activity_normal"
+        else
+          pet_profile_tags << "activity_active"
         end
         if session[:nec] == 3
           pet_profile_tags << "underweight"
         elsif session[:nec] == 5
-          pet_profile_tags << "ideal_weight"
+          pet_profile_tags << "weight_ideal"
         else 
           pet_profile_tags << "overweight"
         end
         session[:pet_profile_tags] = pet_profile_tags
         
-        # Assign pet tips - STILL WORK IN PROGRESS
-        pet_tips = []
+        # Assign pet tips
+        pet_tips = {
+          nutrition: [],
+          activity_body: [],
+          skin_coat: [],
+          dental: [],
+          mental: []
+          }
 
         # Query the pet_tips table
         db = SQLite3::Database.open "balto.db"
@@ -427,40 +443,63 @@ post '/dental_care' do
 
         # Get the column names
         column_names = db.execute("PRAGMA table_info(pet_tips)").map { |column| column[1] }
-
+        
         # Get the index of the C1_inclusion, C2_inclusion and C3_exclusion columns
         c1_inclusion_index = column_names.index("C1_inclusion")
         c2_inclusion_index = column_names.index("C2_inclusion")
         c3_exclusion_index = column_names.index("C3_exclusion")
+        axis_index = column_names.index("Axis")
+        tip_tier_index = column_names.index("tip_tier")
+        tip_id_index = column_names.index("ID")
         
         # Iterate through each row of the table to identify rows that match the C1_inclusion and C2_inclusion and don't match the C3_exclusion
         rows.each do |row|
           if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
             session[:pet_profile_tags].include?(row[c2_inclusion_index]) &&
             !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            
             # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
-            c1_inclusion_value = row[c1_inclusion_index]
-            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
-            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
-            pet_tips << row[0] unless c1_matching_id
+            axis_value = row[axis_index]
+            tip_tier_value = row[tip_tier_index]
+            tip_id_value = row[tip_id_index]
+            
+            # Check if pet_tips already contains a tip with the same tip tier for the same axis
+            if pet_tips[axis_value.to_sym].include?(tip_tier_value)
+              next
+            else
+              pet_tips[axis_value.to_sym] << tip_id_value
+            end
           end
         end
 
         # Iterate through each row of the table to identify rows that match only the C1_inclusion and don't match the C3_exclusion
         rows.each do |row|
           if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
-            row[c2_inclusion_index] == "null" &&
+            (row[c2_inclusion_index] == "null" || row[c2_inclusion_index].nil?) &&
             !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            
             # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
-            c1_inclusion_value = row[c1_inclusion_index]
-            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
-            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
-            pet_tips << row[0] unless c1_matching_id
+            axis_value = row[axis_index]
+            tip_tier_value = row[tip_tier_index]
+            tip_id_value = row[tip_id_index]
+            
+            # Check if pet_tips already contains a tip with the same tip tier for the same axis
+            if pet_tips[axis_value.to_sym].include?(tip_tier_value)
+              next
+            else
+              pet_tips[axis_value.to_sym] << tip_id_value
+            end
           end
         end
 
         session[:pet_tips] = pet_tips
         db.close
+
+        # Create an array to store the tip IDs
+        tip_ids = []
+        # Add the tip IDs for each axis to the tip_ids array
+        tip_ids = session[:pet_tips].values.flatten
+        session[:tip_ids] = tip_ids
 
       redirect '/dummy'
     end
@@ -471,6 +510,54 @@ post '/dental_care' do
     spider_chart_dental = 5
     spider_chart_body = 5
     spider_chart_mobility = 5
+    
+    
+    # Group pet tips by chart Axis and subgroups, and then pass them to front-end  
+    
+    # Connect to the database
+    db = SQLite3::Database.new 'balto.db'
+
+    # Get the tips stored in the session
+    tip_ids = session[:tip_ids]
+    pet_tips = session[:pet_tips]
+
+    # Create an empty hash to store the tips grouped by axis and subgroup
+    grouped_tips = {
+      nutrition: {},
+      activity_body: {},
+      skin_coat: {},
+      dental: {},
+      mental: {}
+    }
+
+    # Get the information for each tip
+    db.execute("SELECT ID, tip_tier, tip_subgroup, card_content FROM pet_tips WHERE ID IN (#{tip_ids.join(',')})").each do |row|
+      tip_id, tip_tier, tip_subgroup, card_content = row[0], row[1], row[2], row[3]     
+    
+      # Determine the axis for the current tip
+      axis = nil
+      pet_tips.each do |a, tips|
+        if tips.include?(tip_id)
+          axis = a
+          break
+        end
+      end
+
+      # Group the tips by axis and subgroup
+      if grouped_tips[axis][tip_subgroup].nil?
+        grouped_tips[axis][tip_subgroup] = []
+      end
+      grouped_tips[axis][tip_subgroup] << { tip_tier: tip_tier, card_content: card_content }
+
+      # Sort the tips within each subgroup by the tip tier
+      grouped_tips.each do |axis, subgroups|
+        subgroups.each do |subgroup, tips|
+          grouped_tips[axis][subgroup].sort_by! { |tip| tip[:tip_tier] }
+        end
+      end
+    session[:grouped_tips] = grouped_tips
+    end
+
     erb :dummy, locals: {
       pet: session[:pet],
       pet_name: session[:pet_name],
@@ -506,12 +593,15 @@ post '/dental_care' do
       daily_feeding_grams: session[:daily_feeding_grams],
       pet_profile_tags: session[:pet_profile_tags],
       pet_tips: session[:pet_tips],
+      tip_ids: session[:tip_ids],
+      grouped_tips: session[:grouped_tips],
       spider_chart_nutrition: spider_chart_nutrition,
       spider_chart_activity: spider_chart_activity,
       spider_chart_dental: spider_chart_dental,
       spider_chart_body: spider_chart_body,
       spider_chart_mobility: spider_chart_mobility }
-    
+  
+   
   end
 
 BaltoConsultation.run!

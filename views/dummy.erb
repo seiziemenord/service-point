@@ -25,7 +25,6 @@
   <h2>weight_target: <%= session[:weight_target] %></h2>
   <h2>activity_level: <%= session[:activity_level] %></h2>
   <h2>k2: <%= session[:k2] %></h2>
-  <h2>activity_level: <%= session[:activity_level] %></h2>
   <h2>recovery_routine: <%= session[:recovery_routine] %></h2>
   <h2>food_type: <%= session[:food_type] %></h2>
   <h2>food_brand: <%= session[:food_brand] %></h2>
@@ -42,7 +41,12 @@
   <h2>Feeding plan in grams: <%= session[:daily_feeding_grams] %></h2>
   <h2>Pet profile tags: <%= session[:pet_profile_tags] %></h2>
   <h2>Pet tips IDs: <%= session[:pet_tips] %></h2>
+  <h2>Tip IDs array: <%= session[:tip_ids] %></h2>
+  <h2>Grouped tips: <%= session[:grouped_tips] %></h2>
+
+
   <h2>Spider chart:</h2>
+
   <div style="height: 300px">
     <canvas id="myChart"></canvas>
   </div>
@@ -69,6 +73,18 @@
   });
 </script>
 
+<!--Retrieving tips block from index.rb -->
+  <div>
+    <% grouped_tips.each do |axis, subgroups| %>
+      <h1><%= axis.to_s.capitalize %></h1>
+      <% subgroups.each do |subgroup, tips| %>
+        <h2><%= subgroup.to_s.capitalize %></h2>
+        <% tips.each do |tip| %>
+          <p><%= tip[:card_content] %></p>
+        <% end %>
+      <% end %>
+    <% end %>
+  </div>
 
 </body>
 </html>

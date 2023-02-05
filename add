@@ -1,0 +1,63 @@
+# Assign pet tips - STILL WORK IN PROGRESS
+        pet_tips = []
+
+        # Query the pet_tips table
+        db = SQLite3::Database.open "balto.db"
+        rows = db.execute("SELECT * FROM pet_tips")
+
+        # Get the column names
+        column_names = db.execute("PRAGMA table_info(pet_tips)").map { |column| column[1] }
+
+        # Get the index of the C1_inclusion, C2_inclusion and C3_exclusion columns
+        c1_inclusion_index = column_names.index("C1_inclusion")
+        c2_inclusion_index = column_names.index("C2_inclusion")
+        c3_exclusion_index = column_names.index("C3_exclusion")
+        
+        # Iterate through each row of the table to identify rows that match the C1_inclusion and C2_inclusion and don't match the C3_exclusion
+        rows.each do |row|
+          if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
+            session[:pet_profile_tags].include?(row[c2_inclusion_index]) &&
+            !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
+            c1_inclusion_value = row[c1_inclusion_index]
+            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
+            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
+            pet_tips << row[0] unless c1_matching_id
+          end
+        end
+
+        # Iterate through each row of the table to identify rows that match only the C1_inclusion and don't match the C3_exclusion
+        rows.each do |row|
+          if (session[:pet_profile_tags].include?(row[c1_inclusion_index]) &&
+            row[c2_inclusion_index] == "null" &&
+            !session[:pet_profile_tags].include?(row[c3_exclusion_index]))
+            # If the row matches, check if pet_tips already contains any ID that has the same C1_inclusion value as the one from the row currently being looped
+            c1_inclusion_value = row[c1_inclusion_index]
+            c1_matching_id = pet_tips.find { |id| rows[id][c1_inclusion_index] == c1_inclusion_value }
+            # If there is no matching ID, add the ID from the row currently being looped to the pet_tips array
+            pet_tips << row[0] unless c1_matching_id
+          end
+        end
+
+        session[:pet_tips] = pet_tips
+        db.close
+
+
+
+
+        <div>
+    <% session[:pet_tips].each do |axis, tips| %>
+
+    <h1><%= axis %></h1>
+    <% tips.each do |tip_id| %>
+      <% tip = pet_tips.where(id: tip_id).first %>
+      <% next if tip.nil? %>
+      <% subgroup = tip.tip_subgroup %>
+      <% unless subgroup_tips.key?(subgroup) %>
+        <h2><%= subgroup %></h2>
+        <% subgroup_tips[subgroup] = true %>
+      <% end %>
+      <p><%= tip.card_content %></p>
+      <% end %>
+    <% end %>
+  </div>
