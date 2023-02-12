@@ -3,19 +3,52 @@
   <head>
     <title>Balto Consultation</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
   </head>
   <body>
-    <form action="/" method="post">
-      <h2>For whom are you doing this consultation?</h2>
+      <h2>Enter your zip code</h2>
       <div>
-        <input type="radio" name="pet" value="dog" id="dog">
-        <label for="dog">Dog</label>
+        <input id="zip" type="number" name="zip" value="zip">
       </div>
+      
+      <h2>Enter your city</h2>
       <div>
-        <input type="radio" name="pet" value="cat" id="cat">
-        <label for="cat">Cat</label>
+        <input id="city" type="text" name="city" value="city">
       </div>
-      <input type="submit" value="Continue">
-    </form>
+
+      <h2>Enter your Country</h2>
+      <div>
+        <select id="country" name="country">
+      <option value="france">France</option>
+      </select>
+      </div>
+      <br>
+      <button id="submit" type="submit" value="Continue">Continue to shipping options</button>
+  
+    <script>
+    $(document).ready(function() {
+    // Event listener for when the continue button is clicked
+    $("#submit").click(function(event) {
+        event.preventDefault();
+        // Get the form data
+        var zip = $("#zip").val();
+        var city = $("#city").val();
+        var country = $("#country").val();
+        var data = {zip: zip, city: city, country: country};
+        // Send a POST request to the server with the form data
+        $.ajax({
+            type: "POST",
+            url: "/",
+            data: data,
+            success: function(response) {
+                // Redirect to the next page on success
+                window.location.href = '/shipping';
+            }
+              });
+          }); 
+      });
+    </script>
+  
   </body>
+  
 </html>

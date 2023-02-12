@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Balto Consultation - Ingredient Exclusion</title>
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <script src="https://embed.sendcloud.sc/spp/1.0.0/api.min.js"></script>
+</head>
+<body>
+  <button id="openServicePointPicker">Open Map</button>
+  <div id="servicePointResult"></div>
+  <div id="postNumberResultElement"></div>
+
+  <h2 id="code-value">Code: <span id="code"></span></h2>
+
+
+  <script>
+    const apiKeyField = document.createElement('input');
+    apiKeyField.value = '503e609c6f0c44ddaba57038830d8c3d';
+
+    const countryField = document.createElement('input');
+    countryField.value = 'fr';
+
+    const languageField = document.createElement('input');
+    languageField.value = 'fr-fr';
+
+    const postalCodeField = document.createElement('input');
+    postalCodeField.value = '<%= session["zip"] %>';
+
+    const cityField = document.createElement('input');
+    cityField.value = '<%= session["city"] %>';
+
+    const openServicePointPickerButton = document.getElementById('openServicePointPicker')
+    const servicePointResultElement = document.getElementById('servicePointResult')
+    const resultPostNumberField = document.getElementById('postNumberResultElement')
+
+    openServicePointPickerButton.addEventListener('click', openServicePointPicker)
+
+    function openServicePointPicker() {
+      if (!apiKeyField.value) {
+        alert('Missing API key')
+      }
+
+      /**
+       * @typedef {object} ServicePointPickerOptions
+       * @property {string} apiKey Required. Set it to your API key.
+       * @property {string} country Required. ISO-2 code of the country you want to display the map in.
+       * @property {string} language Optional. Defaults to 'en-us'.
+       * @property {string} postalCode Optional. Defaults to '' (empty string).
+       * @property {string} city Optional. Defaults to '' (empty string).
+       */
+
+      /** @type {ServicePointPickerOptions} */ const options = {
+        apiKey: apiKeyField.value,
+        country: countryField.value,
+        postalCode: postalCodeField.value,
+        city: cityField.value,
+        language: languageField.value,
+      }
+
+      sendcloud.servicePoints.open(options, successCallback, failureCallback)
+    }
+
+    function getCarrierList() {
+      const carrierInputs = Array.from(document.querySelectorAll('[name="carriers"]'))
+      return carrierInputs
+        .filter((carrierInput) => carrierInput.checked)
+        .map((carrierInput) => carrierInput.value)
+        .join()
+    }
+
+    /**
+    * Handles the selection of a service point.
+    *
+    * @param {ServicePoint} servicePoint
+    * @param {string} postNumber Used as `to_post_number` field in the Parcel creation API
+    */
+    function successCallback(servicePoint, postNumber) {
+      servicePointResultElement.innerHTML = JSON.stringify(servicePoint, null, 2)
+      resultPostNumberField.innerText = postNumber || '—'
+      document.body.classList.add('is-showing-api-result')
+      const code = servicePoint.code;
+      localStorage.setItem('code', code);
+      document.getElementById("code").innerHTML = code;
+    }
+
+    /**
+    * Handles error events and closing the service point picker.
+    *
+    * @param {string[]} errors
+    */
+    function failureCallback(errors) {
+      document.body.classList.remove('is-showing-api-result')
+      console.error('[Failure callback]', errors.join(', '))
+    }
+
+  </script>
+
+</body>
+</html>
